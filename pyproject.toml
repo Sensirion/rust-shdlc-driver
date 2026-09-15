@@ -1,0 +1,30 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "rust-shdlc-driver"
+version = "0.1.0"
+description = "High-performance async Rust SHDLC driver and Python bindings"
+readme = "README.md"
+license = "BSD-3-Clause"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Sensirion AG", email = "info@sensirion.com" }
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: BSD License",
+    "Topic :: System :: Hardware :: Hardware Drivers",
+]
+
+[tool.maturin]
+module-name = "rust_shdlc_driver"
+features = ["python", "serial", "pyo3/extension-module"]
+python-source = "python"
