@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
+import threading
+import time
+
 from rust_shdlc_driver import (
-    ShdlcMockPort,
     ShdlcConnection,
     ShdlcDevice,
-    ShdlcSerialMosiFrameBuilder,
+    ShdlcMockPort,
     ShdlcUnknownCommandError,
 )
-import pytest
 
 
 def make_resp(addr, cmd, state, data):
@@ -21,6 +22,29 @@ def make_resp(addr, cmd, state, data):
         else:
             stuffed.append(b)
     return bytes(bytearray([0x7E]) + stuffed + bytearray([0x7E]))
+
+
+def test_blocking_requests_detach_gil():
+    port = ShdlcMockPort(bitrate=115200)
+    conn = ShdlcConnection(port)
+    dev = ShdlcDevice(conn, slave_address=1)
+
+    thread_ran = False
+
+    def delayed_response():
+        nonlocal thread_ran
+        time.sleep(0.05)
+        thread_ran = True
+        port.push_rx_data(make_resp(1, 0xD0, 0x00, b"SGP40\0"))
+
+    t = threading.Thread(target=delayed_response)
+    t.start()
+
+    res = dev.get_product_name()
+    t.join()
+
+    assert res == "SGP40"
+    assert thread_ran is True
 
 
 def test_sync_device_operations():

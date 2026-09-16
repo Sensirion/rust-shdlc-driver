@@ -76,12 +76,12 @@ impl PyShdlcDevice {
         as_int: bool,
     ) -> PyResult<PyObject> {
         let base = slf.as_mut();
-        let (s, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetProductType, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (s, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetProductType, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
 
@@ -95,12 +95,12 @@ impl PyShdlcDevice {
 
     pub fn get_product_subtype(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<u8> {
         let base = slf.as_mut();
-        let (sub, err_flag) = get_runtime()
-            .block_on(base.conn_obj.async_conn.execute(
-                base.slave_address,
-                &GetProductSubType,
-                true,
-            ))
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (sub, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetProductSubType, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(sub)
@@ -108,12 +108,12 @@ impl PyShdlcDevice {
 
     pub fn get_product_name(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<String> {
         let base = slf.as_mut();
-        let (name, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetProductName, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (name, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetProductName, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(name)
@@ -121,12 +121,12 @@ impl PyShdlcDevice {
 
     pub fn get_article_code(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<String> {
         let base = slf.as_mut();
-        let (code, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetArticleCode, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (code, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetArticleCode, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(code)
@@ -134,12 +134,12 @@ impl PyShdlcDevice {
 
     pub fn get_serial_number(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<String> {
         let base = slf.as_mut();
-        let (sn, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetSerialNumber, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (sn, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetSerialNumber, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(sn)
@@ -147,12 +147,12 @@ impl PyShdlcDevice {
 
     pub fn get_version(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<PyVersion> {
         let base = slf.as_mut();
-        let (v, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetVersion, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (v, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetVersion, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(v.into())
@@ -166,12 +166,16 @@ impl PyShdlcDevice {
         as_exception: bool,
     ) -> PyResult<(u32, PyObject)> {
         let base = slf.as_mut();
-        let ((state, last_err), err_flag) = get_runtime()
-            .block_on(base.conn_obj.async_conn.execute(
-                base.slave_address,
-                &GetErrorState::new(clear),
-                true,
-            ))
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let ((state, last_err), err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(
+                    slave_address,
+                    &GetErrorState::new(clear),
+                    true,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
 
@@ -190,12 +194,12 @@ impl PyShdlcDevice {
 
     pub fn get_slave_address(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<u8> {
         let base = slf.as_mut();
-        let (addr, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetSlaveAddress, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (addr, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetSlaveAddress, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(addr)
@@ -209,12 +213,16 @@ impl PyShdlcDevice {
         update_driver: bool,
     ) -> PyResult<()> {
         let base = slf.as_mut();
-        let (_, err_flag) = get_runtime()
-            .block_on(base.conn_obj.async_conn.execute(
-                base.slave_address,
-                &SetSlaveAddress::new(slave_address),
-                true,
-            ))
+        let async_conn = base.conn_obj.async_conn.clone();
+        let current_slave_address = base.slave_address;
+        let (_, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(
+                    current_slave_address,
+                    &SetSlaveAddress::new(slave_address),
+                    true,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         if update_driver {
@@ -225,12 +233,12 @@ impl PyShdlcDevice {
 
     pub fn get_baudrate(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<u32> {
         let base = slf.as_mut();
-        let (baud, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetBaudrate, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (baud, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetBaudrate, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(baud)
@@ -244,19 +252,25 @@ impl PyShdlcDevice {
         update_driver: bool,
     ) -> PyResult<()> {
         let base = slf.as_mut();
-        let (_, err_flag) = get_runtime()
-            .block_on(base.conn_obj.async_conn.execute(
-                base.slave_address,
-                &SetBaudrate::new(baudrate),
-                true,
-            ))
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (_, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(
+                    slave_address,
+                    &SetBaudrate::new(baudrate),
+                    true,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         if update_driver {
             let transport_arc = base.conn_obj.async_conn.transport();
-            let _ = get_runtime().block_on(async move {
-                let mut transport = transport_arc.lock().await;
-                transport.set_bitrate(baudrate).await
+            py.allow_threads(|| {
+                let _ = get_runtime().block_on(async move {
+                    let mut transport = transport_arc.lock().await;
+                    transport.set_bitrate(baudrate).await
+                });
             });
         }
         Ok(())
@@ -264,12 +278,12 @@ impl PyShdlcDevice {
 
     pub fn get_reply_delay(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<u16> {
         let base = slf.as_mut();
-        let (delay, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetReplyDelay, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (delay, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetReplyDelay, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(delay)
@@ -281,12 +295,16 @@ impl PyShdlcDevice {
         reply_delay: u16,
     ) -> PyResult<()> {
         let base = slf.as_mut();
-        let (_, err_flag) = get_runtime()
-            .block_on(base.conn_obj.async_conn.execute(
-                base.slave_address,
-                &SetReplyDelay::new(reply_delay),
-                true,
-            ))
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (_, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(
+                    slave_address,
+                    &SetReplyDelay::new(reply_delay),
+                    true,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(())
@@ -294,12 +312,12 @@ impl PyShdlcDevice {
 
     pub fn get_system_up_time(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<u32> {
         let base = slf.as_mut();
-        let (uptime, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &GetSystemUpTime, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (uptime, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &GetSystemUpTime, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(uptime)
@@ -307,12 +325,12 @@ impl PyShdlcDevice {
 
     pub fn device_reset(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<()> {
         let base = slf.as_mut();
-        let (_, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &DeviceReset, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (_, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &DeviceReset, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(())
@@ -320,12 +338,12 @@ impl PyShdlcDevice {
 
     pub fn factory_reset(mut slf: PyRefMut<'_, Self>, py: Python<'_>) -> PyResult<()> {
         let base = slf.as_mut();
-        let (_, err_flag) = get_runtime()
-            .block_on(
-                base.conn_obj
-                    .async_conn
-                    .execute(base.slave_address, &FactoryReset, true),
-            )
+        let async_conn = base.conn_obj.async_conn.clone();
+        let slave_address = base.slave_address;
+        let (_, err_flag) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(slave_address, &FactoryReset, true))
+            })
             .map_err(|e| to_py_err(py, e))?;
         base.last_error_flag = err_flag;
         Ok(())

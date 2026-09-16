@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import pytest
 from rust_shdlc_driver import (
     ShdlcError,
     ShdlcTimeoutError,

@@ -77,11 +77,16 @@ impl PyShdlcConnection {
         response_timeout: f64,
     ) -> PyResult<(Bound<'py, PyBytes>, bool)> {
         let timeout_dur = Duration::from_secs_f64(response_timeout);
-        let (rx_data, error_state) = get_runtime()
-            .block_on(
-                self.async_conn
-                    .transceive(slave_address, command_id, &data, timeout_dur),
-            )
+        let async_conn = self.async_conn.clone();
+        let (rx_data, error_state) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.transceive(
+                    slave_address,
+                    command_id,
+                    &data,
+                    timeout_dur,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
         let bytes = PyBytes::new(py, &rx_data);
         Ok((bytes, error_state))
@@ -128,11 +133,15 @@ impl PyShdlcConnection {
             .with_response_lengths(min_len, max_len)
             .with_post_processing_time(Duration::from_secs_f64(post_proc));
 
-        let (rx_bytes, error_state) = get_runtime()
-            .block_on(
-                self.async_conn
-                    .execute(slave_address, &raw_cmd, wait_post_process),
-            )
+        let async_conn = self.async_conn.clone();
+        let (rx_bytes, error_state) = py
+            .allow_threads(|| {
+                get_runtime().block_on(async_conn.execute(
+                    slave_address,
+                    &raw_cmd,
+                    wait_post_process,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
 
         let py_rx_bytes = PyBytes::new(py, &rx_bytes);

@@ -139,13 +139,13 @@ impl PyShdlcFirmwareUpdate {
 
     #[pyo3(signature = (emergency=false))]
     pub fn execute(&mut self, py: Python<'_>, emergency: bool) -> PyResult<()> {
-        let bound_dev = self.device.bind(py);
-        let base_ref = bound_dev.borrow();
-        let base = base_ref.as_ref();
-        let async_dev = crate::device::AsyncShdlcDevice::new(
-            base.conn_obj.async_conn.clone(),
-            base.slave_address,
-        );
+        let (async_conn, slave_address) = {
+            let bound_dev = self.device.bind(py);
+            let base_ref = bound_dev.borrow();
+            let base = base_ref.as_ref();
+            (base.conn_obj.async_conn.clone(), base.slave_address)
+        };
+        let async_dev = crate::device::AsyncShdlcDevice::new(async_conn, slave_address);
 
         let mut updater = ShdlcFirmwareUpdate::new(async_dev, self.image.inner.clone());
 
@@ -167,9 +167,8 @@ impl PyShdlcFirmwareUpdate {
             });
         }
 
-        get_runtime()
-            .block_on(updater.execute(emergency))
-            .map_err(|e| to_py_err(py, e))
+        let res = py.allow_threads(|| get_runtime().block_on(updater.execute(emergency)));
+        res.map_err(|e| to_py_err(py, e))
     }
 }
 

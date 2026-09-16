@@ -2,16 +2,15 @@
 import os
 import pytest
 from rust_shdlc_driver import (
-    ShdlcFirmwareImage,
-    ShdlcFirmwareUpdate,
-    AsyncShdlcFirmwareUpdate,
-    ShdlcMockPort,
-    ShdlcConnection,
     AsyncShdlcConnection,
-    ShdlcDevice,
     AsyncShdlcDevice,
-    FirmwareVersion,
+    AsyncShdlcFirmwareUpdate,
+    ShdlcConnection,
+    ShdlcDevice,
+    ShdlcFirmwareImage,
     ShdlcFirmwareImageSignatureError,
+    ShdlcFirmwareUpdate,
+    ShdlcMockPort,
 )
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "tests", "data")

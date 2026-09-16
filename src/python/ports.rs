@@ -48,7 +48,8 @@ impl PyShdlcSerialPort {
     ) -> PyResult<Self> {
         let mut port_obj = AsyncSerialPort::new(&port, baudrate);
         if do_open {
-            port_obj.open().map_err(|e| to_py_err(py, e))?;
+            py.allow_threads(|| port_obj.open())
+                .map_err(|e| to_py_err(py, e))?;
         }
 
         Ok(Self {
@@ -66,11 +67,12 @@ impl PyShdlcSerialPort {
     #[pyo3(signature = (_exc_type=None, _exc_val=None, _exc_tb=None))]
     pub fn __exit__(
         &mut self,
+        py: Python<'_>,
         _exc_type: Option<&Bound<'_, PyAny>>,
         _exc_val: Option<&Bound<'_, PyAny>>,
         _exc_tb: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<()> {
-        self.close()
+        self.close(py)
     }
 
     #[getter]
@@ -86,8 +88,7 @@ impl PyShdlcSerialPort {
     #[setter]
     pub fn set_bitrate(&mut self, py: Python<'_>, bitrate: u32) -> PyResult<()> {
         if let Some(ref mut port) = self.serial_port {
-            get_runtime()
-                .block_on(port.set_bitrate(bitrate))
+            py.allow_threads(|| get_runtime().block_on(port.set_bitrate(bitrate)))
                 .map_err(|e| to_py_err(py, e))?;
         }
         self.baudrate = bitrate;
@@ -114,18 +115,22 @@ impl PyShdlcSerialPort {
 
     pub fn open(&mut self, py: Python<'_>) -> PyResult<()> {
         if let Some(ref mut port) = self.serial_port {
-            port.open().map_err(|e| to_py_err(py, e))?;
+            py.allow_threads(|| port.open())
+                .map_err(|e| to_py_err(py, e))?;
         } else {
             let mut port = AsyncSerialPort::new(&self.port_name, self.baudrate);
-            port.open().map_err(|e| to_py_err(py, e))?;
+            py.allow_threads(|| port.open())
+                .map_err(|e| to_py_err(py, e))?;
             self.serial_port = Some(port);
         }
         Ok(())
     }
 
-    pub fn close(&mut self) -> PyResult<()> {
+    pub fn close(&mut self, py: Python<'_>) -> PyResult<()> {
         if let Some(ref mut port) = self.serial_port {
-            let _ = get_runtime().block_on(port.close());
+            py.allow_threads(|| {
+                let _ = get_runtime().block_on(port.close());
+            });
         }
         Ok(())
     }
@@ -146,15 +151,17 @@ impl PyShdlcSerialPort {
         let timeout_dur = Duration::from_secs_f64(response_timeout);
         let extra_dur = Duration::from_secs_f64(self.additional_response_time);
 
-        let miso = get_runtime()
-            .block_on(ShdlcTransceiver::transceive(
-                port,
-                slave_address,
-                command_id,
-                &data,
-                timeout_dur,
-                extra_dur,
-            ))
+        let miso = py
+            .allow_threads(|| {
+                get_runtime().block_on(ShdlcTransceiver::transceive(
+                    port,
+                    slave_address,
+                    command_id,
+                    &data,
+                    timeout_dur,
+                    extra_dur,
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
 
         let bytes = PyBytes::new(py, &miso.data);
@@ -196,8 +203,7 @@ impl PyShdlcTcpPort {
     ) -> PyResult<Self> {
         let mut tcp = AsyncTcpPort::new(&ip, port);
         if do_open {
-            get_runtime()
-                .block_on(tcp.open())
+            py.allow_threads(|| get_runtime().block_on(tcp.open()))
                 .map_err(|e| to_py_err(py, e))?;
         }
 
@@ -216,11 +222,12 @@ impl PyShdlcTcpPort {
     #[pyo3(signature = (_exc_type=None, _exc_val=None, _exc_tb=None))]
     pub fn __exit__(
         &mut self,
+        py: Python<'_>,
         _exc_type: Option<&Bound<'_, PyAny>>,
         _exc_val: Option<&Bound<'_, PyAny>>,
         _exc_tb: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<()> {
-        self.close()
+        self.close(py)
     }
 
     #[getter]
@@ -258,22 +265,22 @@ impl PyShdlcTcpPort {
 
     pub fn open(&mut self, py: Python<'_>) -> PyResult<()> {
         if let Some(ref mut tcp) = self.tcp_port {
-            get_runtime()
-                .block_on(tcp.open())
+            py.allow_threads(|| get_runtime().block_on(tcp.open()))
                 .map_err(|e| to_py_err(py, e))?;
         } else {
             let mut tcp = AsyncTcpPort::new(&self.ip, self.port);
-            get_runtime()
-                .block_on(tcp.open())
+            py.allow_threads(|| get_runtime().block_on(tcp.open()))
                 .map_err(|e| to_py_err(py, e))?;
             self.tcp_port = Some(tcp);
         }
         Ok(())
     }
 
-    pub fn close(&mut self) -> PyResult<()> {
+    pub fn close(&mut self, py: Python<'_>) -> PyResult<()> {
         if let Some(ref mut tcp) = self.tcp_port {
-            let _ = get_runtime().block_on(tcp.close());
+            py.allow_threads(|| {
+                let _ = get_runtime().block_on(tcp.close());
+            });
         }
         Ok(())
     }
@@ -293,15 +300,17 @@ impl PyShdlcTcpPort {
 
         let timeout_dur = Duration::from_secs_f64(self.socket_timeout + response_timeout);
 
-        let miso = get_runtime()
-            .block_on(ShdlcTransceiver::transceive(
-                tcp,
-                slave_address,
-                command_id,
-                &data,
-                timeout_dur,
-                Duration::from_millis(0),
-            ))
+        let miso = py
+            .allow_threads(|| {
+                get_runtime().block_on(ShdlcTransceiver::transceive(
+                    tcp,
+                    slave_address,
+                    command_id,
+                    &data,
+                    timeout_dur,
+                    Duration::from_millis(0),
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
 
         let bytes = PyBytes::new(py, &miso.data);
@@ -361,8 +370,8 @@ impl PyShdlcMockPort {
 
     #[setter]
     pub fn set_bitrate(&mut self, py: Python<'_>, bitrate: u32) -> PyResult<()> {
-        get_runtime()
-            .block_on(self.inner.set_bitrate(bitrate))
+        let mut inner = self.inner.clone();
+        py.allow_threads(|| get_runtime().block_on(inner.set_bitrate(bitrate)))
             .map_err(|e| to_py_err(py, e))
     }
 
@@ -377,8 +386,8 @@ impl PyShdlcMockPort {
     }
 
     pub fn close(&mut self, py: Python<'_>) -> PyResult<()> {
-        get_runtime()
-            .block_on(self.inner.close())
+        let mut inner = self.inner.clone();
+        py.allow_threads(|| get_runtime().block_on(inner.close()))
             .map_err(|e| to_py_err(py, e))
     }
 
@@ -391,15 +400,18 @@ impl PyShdlcMockPort {
         response_timeout: f64,
     ) -> PyResult<(u8, u8, u8, Bound<'py, PyBytes>)> {
         let timeout_dur = Duration::from_secs_f64(response_timeout);
-        let miso = get_runtime()
-            .block_on(ShdlcTransceiver::transceive(
-                &mut self.inner,
-                slave_address,
-                command_id,
-                &data,
-                timeout_dur,
-                Duration::from_millis(10),
-            ))
+        let mut inner = self.inner.clone();
+        let miso = py
+            .allow_threads(|| {
+                get_runtime().block_on(ShdlcTransceiver::transceive(
+                    &mut inner,
+                    slave_address,
+                    command_id,
+                    &data,
+                    timeout_dur,
+                    Duration::from_millis(10),
+                ))
+            })
             .map_err(|e| to_py_err(py, e))?;
 
         let bytes = PyBytes::new(py, &miso.data);
