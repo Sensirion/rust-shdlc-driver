@@ -1,0 +1,30 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+
+jobs:
+  build_and_deploy_python:
+    uses: sensirion/.github/.github/workflows/shared.python.pypi_publish.yml@main
+    with:
+      use-driver-index: false
+    secrets: inherit
+
+  publish_crate:
+    name: Publish Rust Crate to crates.io
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Publish to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish
