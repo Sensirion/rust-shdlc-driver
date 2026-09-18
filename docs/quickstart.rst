@@ -1,8 +1,68 @@
 Quickstart & Usage Examples
 ============================
 
+Rust Quickstart
+---------------
+
+Add ``rust-shdlc-driver`` to your ``Cargo.toml``:
+
+.. code-block:: toml
+
+   [dependencies]
+   rust-shdlc-driver = "0.1.0"
+
+Synchronous Usage (Rust)
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: rust
+
+   use rust_shdlc_driver::connection::ShdlcConnection;
+   use rust_shdlc_driver::device::ShdlcDevice;
+   use rust_shdlc_driver::transport::AsyncSerialPort;
+
+   fn main() -> Result<(), Box<dyn std::error::Error>> {
+       let mut port = AsyncSerialPort::new("/dev/ttyUSB0", 115200);
+       port.open()?;
+
+       let conn = ShdlcConnection::new(Box::new(port))?;
+       let mut device = ShdlcDevice::new(conn, 0);
+
+       let product_name = device.get_product_name()?;
+       let serial_number = device.get_serial_number()?;
+
+       println!("Connected to {}, S/N: {}", product_name, serial_number);
+       Ok(())
+   }
+
+Asynchronous Usage (Rust / Tokio)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: rust
+
+   use rust_shdlc_driver::connection::AsyncShdlcConnection;
+   use rust_shdlc_driver::device::AsyncShdlcDevice;
+   use rust_shdlc_driver::transport::AsyncSerialPort;
+
+   #[tokio::main]
+   async fn main() -> Result<(), Box<dyn std::error::Error>> {
+       let mut port = AsyncSerialPort::new("/dev/ttyUSB0", 115200);
+       port.open()?;
+
+       let conn = AsyncShdlcConnection::new(Box::new(port));
+       let mut device = AsyncShdlcDevice::new(conn, 0);
+
+       let product_name = device.get_product_name().await?;
+       let serial_number = device.get_serial_number().await?;
+
+       println!("Connected to {}, S/N: {}", product_name, serial_number);
+       Ok(())
+   }
+
+Python Quickstart
+-----------------
+
 Prerequisites & Virtual Environment Setup
------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We recommend setting up and activating a dedicated virtual environment:
 
@@ -16,11 +76,11 @@ We recommend setting up and activating a dedicated virtual environment:
    # py -3.11 -m venv .venv
    # .venv\Scripts\activate
 
-   # Install the driver
-   maturin develop --release
+   # Install the driver via pip
+   pip install rust-shdlc-driver
 
-Synchronous Usage (Serial Port)
--------------------------------
+Synchronous Usage (Python Serial Port)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -40,8 +100,8 @@ Synchronous Usage (Serial Port)
        print(f"Connected to {prod_name} (Type: {prod_type}, S/N: {serial_nr})")
        print(f"Versions: {version}")
 
-Asynchronous Usage (asyncio)
-----------------------------
+Asynchronous Usage (Python asyncio)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -60,7 +120,7 @@ Asynchronous Usage (asyncio)
    asyncio.run(main())
 
 Testing with In-Memory Mock Port
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
@@ -71,8 +131,8 @@ Testing with In-Memory Mock Port
    conn = ShdlcConnection(mock_port)
    device = ShdlcDevice(conn, slave_address=1)
 
-   # Push a mock response frame
-   mock_port.push_rx_data(b"\x7e\x01\xd0\x00\x06SHT31\0\x7d\x5d\x7e")
+   # Push a mock response frame (GetProductName -> SHT31)
+   mock_port.push_rx_data(b"\x7e\x01\xd0\x00\x06SHT31\0\xd5\x7e")
 
    name = device.get_product_name()
    assert name == "SHT31"

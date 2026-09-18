@@ -67,7 +67,7 @@ pub fn register_python_module(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResu
     m.add_class::<firmware::PyAsyncShdlcFirmwareUpdate>()?;
 
     // Module doc and version
-    m.add("__version__", "0.1.0")?;
+    m.add("__version__", "0.2.0")?;
     m.add("__copyright__", "(c) Copyright Sensirion AG")?;
 
     Ok(())

@@ -1,6 +1,6 @@
 [package]
 name = "rust-shdlc-driver"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["Sensirion AG"]
 description = "High-performance async Rust SHDLC driver and Python bindings with decoupled transport layer"

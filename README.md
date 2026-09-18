@@ -9,51 +9,102 @@ High-performance asynchronous Rust SHDLC driver and Python bindings for Sensirio
 - **Firmware Update**: Complete support for Intel-Hex firmware images, signature validation, checksum verification, and device flashing over SHDLC bootloader.
 - **Mock Transport**: Built-in high-fidelity in-memory mock transport for test-driven development and unit testing without physical hardware.
 
-## Virtual Environment Setup (Recommended)
+## Rust Usage
 
-It is strongly recommended to set up and use a dedicated Python virtual environment for isolated dependency management:
+### Installation
 
-### Linux / macOS
+Add `rust-shdlc-driver` to your project using `cargo add`:
 
 ```bash
-# Create a virtual environment using Python 3.11+
-python3.11 -m venv .venv
+cargo add rust-shdlc-driver
+```
 
-# Activate the virtual environment
+Or add it directly to your `Cargo.toml`:
+
+```toml
+[dependencies]
+rust-shdlc-driver = "0.1.0"
+```
+
+### Basic Example (Rust)
+
+#### Synchronous
+
+```rust
+use rust_shdlc_driver::connection::ShdlcConnection;
+use rust_shdlc_driver::device::ShdlcDevice;
+use rust_shdlc_driver::transport::AsyncSerialPort;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Open serial port at 115200 baud
+    let mut port = AsyncSerialPort::new("/dev/ttyUSB0", 115200);
+    port.open()?;
+
+    let conn = ShdlcConnection::new(Box::new(port))?;
+    let mut device = ShdlcDevice::new(conn, 0);
+
+    let product_name = device.get_product_name()?;
+    let serial_number = device.get_serial_number()?;
+
+    println!("Product: {}, Serial: {}", product_name, serial_number);
+    Ok(())
+}
+```
+
+#### Asynchronous (Tokio)
+
+```rust
+use rust_shdlc_driver::connection::AsyncShdlcConnection;
+use rust_shdlc_driver::device::AsyncShdlcDevice;
+use rust_shdlc_driver::transport::AsyncSerialPort;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let mut port = AsyncSerialPort::new("/dev/ttyUSB0", 115200);
+    port.open()?;
+
+    let conn = AsyncShdlcConnection::new(Box::new(port));
+    let mut device = AsyncShdlcDevice::new(conn, 0);
+
+    let product_name = device.get_product_name().await?;
+    let serial_number = device.get_serial_number().await?;
+
+    println!("Product: {}, Serial: {}", product_name, serial_number);
+    Ok(())
+}
+```
+
+## Python Usage
+
+### Installation
+
+It is strongly recommended to install the package inside a dedicated Python virtual environment (`venv`):
+
+#### Linux / macOS
+
+```bash
+# Create and activate a virtual environment
+python3 -m venv .venv
 source .venv/bin/activate
 
-# Upgrade pip and install maturin
-pip install --upgrade pip maturin
+# Install via pip
+pip install rust-shdlc-driver
 ```
 
-### Windows
+#### Windows
 
 ```bat
-# Create a virtual environment using Python 3.11+
-py -3.11 -m venv .venv
-
-# Activate the virtual environment
+# Create and activate a virtual environment
+py -m venv .venv
 .venv\Scripts\activate
 
-# Upgrade pip and install maturin
-pip install --upgrade pip maturin
+# Install via pip
+pip install rust-shdlc-driver
 ```
 
-## Python Installation
+### Basic Example (Python)
 
-Once your virtual environment is active:
-
-```bash
-# Development editable install
-maturin develop
-
-# Optimized release install
-maturin develop --release
-```
-
-## Python Usage Examples
-
-### Synchronous Usage
+#### Synchronous
 
 ```python
 from rust_shdlc_driver import ShdlcSerialPort, ShdlcConnection, ShdlcDevice
@@ -61,18 +112,14 @@ from rust_shdlc_driver import ShdlcSerialPort, ShdlcConnection, ShdlcDevice
 with ShdlcSerialPort(port="/dev/ttyUSB0", baudrate=115200) as port:
     conn = ShdlcConnection(port)
     device = ShdlcDevice(conn, slave_address=0)
-    
-    product_type = device.get_product_type()
+
     product_name = device.get_product_name()
     serial_number = device.get_serial_number()
-    version = device.get_version()
-    
-    print(f"Product: {product_name} ({product_type})")
-    print(f"Serial: {serial_number}")
-    print(f"Version: {version}")
+
+    print(f"Product: {product_name}, Serial: {serial_number}")
 ```
 
-### Asynchronous Usage (Asyncio)
+#### Asynchronous (asyncio)
 
 ```python
 import asyncio
@@ -82,38 +129,35 @@ async def main():
     port = ShdlcSerialPort(port="/dev/ttyUSB0", baudrate=115200)
     conn = AsyncShdlcConnection(port)
     device = AsyncShdlcDevice(conn, slave_address=0)
-    
-    name = await device.get_product_name()
-    print(f"Product name: {name}")
+
+    product_name = await device.get_product_name()
+    serial_number = await device.get_serial_number()
+
+    print(f"Product: {product_name}, Serial: {serial_number}")
 
 asyncio.run(main())
 ```
 
-### Virtual Mock Port for Testing
+## Examples
 
-```python
-from rust_shdlc_driver import ShdlcMockPort, ShdlcConnection, ShdlcDevice
+Additional standalone examples for both Rust and Python can be found in the [`examples/`](examples) directory:
 
-port = ShdlcMockPort(bitrate=115200)
-conn = ShdlcConnection(port)
-device = ShdlcDevice(conn, slave_address=1)
+- **Rust examples**:
+  - `examples/sync_device.rs` – Synchronous serial communication (`cargo run --example sync_device`)
+  - `examples/async_device.rs` – Asynchronous communication with Tokio (`cargo run --example async_device`)
+  - `examples/mock_device.rs` – In-memory mock transport testing (`cargo run --example mock_device`)
+- **Python examples**:
+  - `examples/python/sync_device.py` – Synchronous serial communication
+  - `examples/python/async_device.py` – Asynchronous communication with `asyncio`
+  - `examples/python/mock_device.py` – In-memory mock transport testing
 
-# Push response frame to virtual mock queue
-port.push_rx_data(b"\x7e\x01\xd0\x00\x06SHT31\0\x7d\x5d\x7e")
-assert device.get_product_name() == "SHT31"
-```
+## Developer Guide & Building from Source
 
-## Running Tests
+Detailed developer instructions on building the Rust and Python packages from source, running tests, and compiling documentation are available in the Sphinx documentation:
 
-```bash
-# Rust unit and mock integration tests
-cargo test
+- See the [Developer Guide & Build Instructions](docs/build.rst).
 
-# Python pytest suite
-pytest python_tests/ -v
-```
-
-## Building Documentation
+To build the Sphinx documentation locally:
 
 ```bash
 pip install sphinx sphinx_rtd_theme
