@@ -1,4 +1,7 @@
-# rust-shdlc-driver
+# Sensirion SHDLC Driver (Rust + Python)
+
+[![CI](https://github.com/Sensirion/rust-shdlc-driver/actions/workflows/ci.yml/badge.svg)](https://github.com/Sensirion/rust-shdlc-driver/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
 High-performance asynchronous Rust SHDLC driver and Python bindings for Sensirion SHDLC devices over serial, TCP, and custom transports.
 
